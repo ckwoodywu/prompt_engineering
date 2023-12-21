@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG-CHATBOT</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e5e5e5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .chat-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+        }
+        .chat-box {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .chat-message {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 8px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+        }
+        .user-message {
+            text-align: right;
+        }
+        .chat-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .chat-form > * {
+            flex: 1;
+            min-width: 120px;
+        }
+        input[type="text"], select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        input[type="submit"] {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        input[type="text"] {
+            flex-grow: 2;
+        }
+
+        input[type="submit"] {
+            white-space: nowrap;
+        }
+        #directory {
+            display: none;
+        }
+        .upload-btn {
+            display: inline-block;
+            background-color: #4caf50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+        }
+        #file-upload-status {
+            margin-left: 10px;
+            font-size: 14px;
+        }
+        .copy-btn {
+            display: none;
+            cursor: pointer;
+            margin-left: 10px;
+            color: #4caf50;
+        }
+
+        .chat-message:hover .copy-btn {
+            display: inline;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 20px;
+            height: 20px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1>RAG-CHATBOT</h1>
+        <div id="chatBox" class="chat-box">
+        </div>
+        <form id="chatForm" class="chat-form" enctype="multipart/form-data">
+        <select name="mode" id="mode" onchange="updateModelOptions()">
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+        </select>
+        <select name="model" id="model">
+            <option value="gpt-3.5">GPT-3.5</option>
+            <option value="llama" style="display:none;">LLaMA-2-13B</option>
+        </select>
+        <select name="rag" id="rag">
+            <option value="off">RAG Off</option>
+            <option value="on">RAG On</option>
+        </select>
+
+            <label for="directory" class="upload-btn">+</label>
+            <input type="file" name="directory" id="directory" multiple>
+            <span id="file-upload-status"></span>
+            <label for="useOriginalText">Use original text:</label>
+            <input type="checkbox" id="useOriginalText" name="useOriginalText">
+<!--            <label for="useEntireUploads">Entire database:</label>-->
+<!--            <input type="checkbox" id="useEntireUploads" name="useEntireUploads">-->
+            <input type="text" name="user_input" id="user_input" placeholder="Type your message..." required>
+            <input type="submit" value="Send">
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function(){
+            function updateModelOptions() {
+                var modeSelect = document.getElementById("mode");
+                var modelSelect = document.getElementById("model");
+
+                if (modeSelect.value === "online") {
+                    modelSelect.options[0].style.display = "block"; // GPT-3.5
+                    modelSelect.options[1].style.display = "none"; // LLAMA
+                    modelSelect.value = "gpt-3.5";
+                } else {
+                    modelSelect.options[0].style.display = "none"; // GPT-3.5
+                    modelSelect.options[1].style.display = "block"; // LLAMA
+                    modelSelect.value = "llama";
+                }
+            }
+
+            updateModelOptions();
+            $('#mode').change(updateModelOptions);
+
+            $('#chatForm').on('submit', function(e){
+                e.preventDefault();
+                var formData = new FormData(this);
+                var useOriginalText = $('#useOriginalText').is(':checked');
+                formData.append('useOriginalText', useOriginalText); // 加入useOriginalText数据
+                var userMessage = $('#user_input').val();
+                appendMessage(userMessage, 'user-message', false);
+                var loaderMessage = appendMessage('', 'bot-message', true);
+
+                $.ajax({
+                    url: '/chat',
+                    type: 'post',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(data){
+                        loaderMessage.remove();
+                        appendMessage(data.response, 'bot-message', false);
+                    },
+                    error: function(){
+                        loaderMessage.find('.message-text').html('Error loading response.');
+                    }
+                });
+            });
+            function appendMessage(message, className, isLoader = false) {
+                var messageContent = isLoader ? '<div class="loader"></div>' : message;
+
+                var messageElement = $('<div>').addClass('chat-message ' + className);
+
+                if (isLoader) {
+                    messageElement.html('<span class="message-text">' + messageContent + '</span>');
+                } else {
+                    messageElement.html('<span class="message-text">' + messageContent + '</span><span class="copy-btn">Copy</span>');
+                }
+
+                $('#chatBox').append(messageElement);
+                $('#chatBox').scrollTop($('#chatBox')[0].scrollHeight);
+
+                return messageElement;
+            }
+
+            $('#chatBox').on('click', '.copy-btn', function() {
+                var message = $(this).siblings('.message-text').text();
+                navigator.clipboard.writeText(message).then(() => {
+                    alert('Message copied!');
+                });
+            });
+
+            $('#directory').on('change', function() {
+                if (this.files.length > 0) {
+                    $('#file-upload-status').html('📄 ' + this.files.length + ' files selected');
+                } else {
+                    $('#file-upload-status').html('');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+
