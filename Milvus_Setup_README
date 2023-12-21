@@ -1,0 +1,33 @@
+
+Check IP config:
+ifconfig
+
+Removing Existing Container:
+docker rm -f <container>
+
+List running containers:
+docker ps
+
+Start Milvus:
+sudo docker-compose up -d
+
+Check Milvus status:
+sudo docker-compose ps
+
+End Milvus
+Start Docker:
+sudo docker-compose down
+
+Restart docker:
+sudo systemctl restart docker.socket docker.service
+
+Running Milvus Attu from Docker:
+sudo docker run -p 8000:3000 -e MILVUS_URL={0.0.0.0}:19530 zilliz/attu:v2.3.1
+
+Connect to Attu GUI through Web browser:
+http://172.17.0.2:3000
+
+Milvus IP Address (For Attu Login):
+172.17.0.1:19530
+
+
