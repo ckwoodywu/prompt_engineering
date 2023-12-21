@@ -1,4 +1,23 @@
 
+List All Containers (including stopped ones):
+docker ps -a
+
+Stop a Running Container:
+docker stop CONTAINER_ID
+
+Start a Stopped Container:
+docker start CONTAINER_ID
+
+Remove a Container:
+docker rm CONTAINER_ID
+
+Use the -f option to force removal if the container is running
+docker rm -f CONTAINER_ID
+
+
+Listen all ports running:
+ss -tulpn
+
 Check IP config:
 ifconfig
 

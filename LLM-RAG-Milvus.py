@@ -77,19 +77,19 @@ def create_collection(new_doc, embedding):
     return milvusDb
 
 
-def load_collection(new_doc, embedding):
-    milvusDb = Milvus.from_documents(
-        new_doc,
-        embedding=embedding,
-        collection_name=COLLECTION_NAME,
-        connection_args={"host": MILVUS_HOST, "port": MILVUS_PORT}
-    )
-
-#    milvusDb = Milvus(
-#        embeddings,
+def load_collection(new_doc, embeddings):
+#    milvusDb = Milvus.from_documents(
+#        new_doc,
+#        embedding=embedding,
 #        collection_name=COLLECTION_NAME,
-#        connection_args={"host": MILVUS_HOST, "port": MILVUS_PORT},
+#        connection_args={"host": MILVUS_HOST, "port": MILVUS_PORT}
 #    )
+
+    milvusDb = Milvus(
+        embeddings,
+        collection_name=COLLECTION_NAME,
+        connection_args={"host": MILVUS_HOST, "port": MILVUS_PORT},
+    )
     return milvusDb
 
 
@@ -159,7 +159,7 @@ def llama_response(directory, query):
     return answer
 
 
-def rag_mode(directory, query):
+def rag_mode(directory, query, hasNewCollection):
     # Remove Old Milvus collection
     MILVUS_HOST = "localhost"
     MILVUS_PORT = "19530"
@@ -168,7 +168,7 @@ def rag_mode(directory, query):
     docsearch = ""
 
     # Creating new Vector DB
-    if not utility.has_collection(COLLECTION_NAME):
+    if hasNewCollection == True:
         loader = DirectoryLoader(directory)
 
         documents = loader.load()
@@ -286,7 +286,7 @@ def llamachatbot(message):
         n_batch=30,
         callback_manager=callback_manager,
         max_tokens=4095,
-        n_parts=1,
+        n_parts=1,        
     )
     # create a text prompt
     prompt = message
@@ -348,7 +348,7 @@ def chat():
 
         if use_entire_uploads:
             directory_path = app.config['UPLOAD_FOLDER']
-            bot_response = rag_mode(directory_path, user_input)
+            bot_response = rag_mode(directory_path, user_input, True)
         else:
             valid_files = [file for file in files if file and allowed_file(file.filename)]
             invalid_files = [file.filename for file in files if file and not allowed_file(file.filename)]
@@ -368,14 +368,22 @@ def chat():
                 for file in valid_files:
                     filename = secure_filename(file.filename)
                     file.save(os.path.join(directory_path, filename))
-                bot_response = rag_mode(directory_path, user_input)
+                bot_response = rag_mode(directory_path, user_input, True)
 
             else:
-                return jsonify({'response': "No valid files uploaded."})
+
+                if (utility.has_collection(COLLECTION_NAME)):
+                    bot_response = rag_mode("", user_input, False)
+                else:
+                    return jsonify({'response': "No valid files uploaded."})
+                
     elif mode == 'online' and model == 'gpt-3.5' and rag == 'off':
         bot_response = gpt3chatbot(user_input)
     elif mode == 'offline' and model == 'llama' and rag == 'off':
         bot_response = llamachatbot(user_input)
+
+
+
 
     return jsonify({'response': bot_response})
 
