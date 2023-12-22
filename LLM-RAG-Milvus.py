@@ -77,14 +77,7 @@ def create_collection(new_doc, embedding):
     return milvusDb
 
 
-def load_collection(new_doc, embeddings):
-#    milvusDb = Milvus.from_documents(
-#        new_doc,
-#        embedding=embedding,
-#        collection_name=COLLECTION_NAME,
-#        connection_args={"host": MILVUS_HOST, "port": MILVUS_PORT}
-#    )
-
+def load_collection(embeddings):
     milvusDb = Milvus(
         embeddings,
         collection_name=COLLECTION_NAME,
@@ -134,7 +127,7 @@ def llama_response(directory, query):
 
     # Loading Vector DB
     if utility.has_collection(COLLECTION_NAME):
-        db = load_collection(new_doc, hf_embedding)
+        db = load_collection(hf_embedding)
 
     else:
         # Create New Milvus collection & Store new documents into the collection
@@ -192,39 +185,8 @@ def rag_mode(directory, query, hasNewCollection):
         docsearch = create_collection(new_doc, embeddings)
 
     else:
-
-        loader = DirectoryLoader(directory)
-
-        documents = loader.load()
-
-        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
-        split_docs = text_splitter.split_documents(documents)
-
-        new_doc = []
-        for doc in split_docs:
-            met = doc.metadata
-            met['title'] = "L"
-            met['description'] = "L"
-            met['language'] = 'us'
-            new_doc.append(Document(page_content=doc.page_content, metadata=met))
-        #    	continue
-
-        # Loading Vector DB
-
-        collection = Collection(COLLECTION_NAME)  # Get an existing collection.
-
-        callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
         embeddings = OpenAIEmbeddings()
-
-        docsearch = load_collection(new_doc, embeddings)
-
-    # Create New Milvus collection & Store new documents into the collection
-    #    docsearch = Milvus.from_documents(
-    #	new_doc,
-    #	embedding=embeddings,
-    #	collection_name=COLLECTION_NAME,
-    #	connection_args={"host": MILVUS_HOST, "port": MILVUS_PORT}
-    #    )
+        docsearch = load_collection(embeddings)
 
     # Create an Index for the new Milvus collection
     #    index_param = {
@@ -243,6 +205,8 @@ def rag_mode(directory, query, hasNewCollection):
     #    utility.index_building_progress(COLLECTION_NAME)
 
     #    docsearch = Chroma.from_documents(split_docs, embeddings)
+
+    callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
     llm = ChatOpenAI(model_name="gpt-3.5-turbo", callback_manager=callback_manager)
 
     qa = RetrievalQA.from_chain_type(llm=OpenAI(), chain_type="stuff", retriever=docsearch.as_retriever(),

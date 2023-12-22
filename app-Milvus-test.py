@@ -516,7 +516,18 @@ def chat():
                 return jsonify({'response': f"Invalid file type."})
 
             if valid_files:
-                # Create a new directory named with timestamp
+        met = doc.metadata
+        met['title'] = "LLM RAG Milvus"
+        met['description'] = "LLM RAG Milvus"
+        met['language'] = 'us'
+        new_doc.append(Document(page_content=doc.page_content, metadata=met))
+    # continue
+
+    db = ""
+
+    # Loading Vector DB
+    if utility.has_collection(COLLECTION_NAME):
+        db = load_collection(new_doc, hf_embedding)
                 current_time = datetime.now().strftime("%Y%m%d%H%M%S")
                 directory_name = os.path.splitext(files[0].filename)[0] + "_" + current_time
                 directory_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(directory_name))
