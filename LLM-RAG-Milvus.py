@@ -141,7 +141,6 @@ def llama_response(directory, query, hasNewCollection):
         hf_embedding = HuggingFaceInstructEmbeddings()
         docsearch = load_collection(hf_embedding)
 
-
     use_original_text = request.form.get('useOriginalText') == 'on'
     print(use_original_text)
     if use_original_text:
@@ -157,23 +156,23 @@ def llama_response(directory, query, hasNewCollection):
 
     #    chain = load_qa_chain(llm, chain_type="stuff", verbose=False)
 
-    #answer = chain.run(input_documents=search, question=query)
+    # answer = chain.run(input_documents=search, question=query)
 
     response = chain({"question": search}, return_only_outputs=True)
     return response['answer']
 
-    #return answer
+    # return answer
 
 
 def rag_mode(directory, query, hasNewCollection):
-    # Remove Old Milvus collection
+    # Connect Milvus Db
     MILVUS_HOST = "localhost"
     MILVUS_PORT = "19530"
     milvus_connection = connections.connect("default", host=MILVUS_HOST, port=MILVUS_PORT)
 
     docsearch = ""
 
-    # Creating new Vector DB
+    # Create and Add new collection
     if hasNewCollection == True:
         loader = DirectoryLoader(directory)
 
@@ -189,7 +188,7 @@ def rag_mode(directory, query, hasNewCollection):
             met['description'] = "L"
             met['language'] = 'us'
             new_doc.append(Document(page_content=doc.page_content, metadata=met))
-        #    	continue
+            continue
 
         callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
         embeddings = OpenAIEmbeddings()
@@ -197,25 +196,10 @@ def rag_mode(directory, query, hasNewCollection):
         # Create New Milvus collection & Store new documents into the collection
         docsearch = create_collection(new_doc, embeddings)
 
+    # Load existing collection
     else:
         embeddings = OpenAIEmbeddings()
         docsearch = load_collection(embeddings)
-
-    # Create an Index for the new Milvus collection
-    #    index_param = {
-    #        'index_type': "IVF_FLAT",
-    #        'params': {'nlist': 16384},  # Adjust 'nlist' based on your dataset size and characteristics
-    #        'metric_type': "L2"  # Choose the appropriate metric type for your vectors
-    #    }
-
-    #    collection = Collection(COLLECTION_NAME)
-    #    collection.create_index(
-    #    	field_name="text",
-    #  	index_params=index_param)
-
-    #    print(f"Index created for collection: {collection_name}")
-
-    #    utility.index_building_progress(COLLECTION_NAME)
 
     #    docsearch = Chroma.from_documents(split_docs, embeddings)
 
@@ -263,11 +247,11 @@ def llamachatbot(message):
         n_batch=30,
         callback_manager=callback_manager,
         max_tokens=4095,
-        n_parts=1,        
+        n_parts=1,
     )
     # create a text prompt
     prompt = message
-    print("Starting to generate llama2-rag-off response...")
+    print("Starting to generate llama2-rag-off ree 104,sponse...")
     # generate a response (takes several seconds)
     output = LLM(prompt)
     print("Response generated.")
@@ -289,13 +273,18 @@ def chat():
     bot_response = ""  # Initialize bot_response to an empty string or a default value
 
     if mode == 'offline' and model == 'llama' and rag == 'on':
+
         files = request.files.getlist('directory')
         if not files:
-            return jsonify({'response': "No files uploaded."})
+            if (utility.has_collection(COLLECTION_NAME)):
+                bot_response = llama_response("", user_input, False)
+                return jsonify({'response': bot_response})
+            else:
+                return jsonify({'response': "No files uploaded."})
 
         if use_entire_uploads:
             directory_path = app.config['UPLOAD_FOLDER']
-            bot_response = llama_response(directory_path, user_input)
+            bot_response = llama_response(directory_path, user_input, True)
         else:
             valid_files = [file for file in files if file and allowed_file(file.filename)]
             invalid_files = [file.filename for file in files if file and not allowed_file(file.filename)]
@@ -316,7 +305,7 @@ def chat():
                     filename = secure_filename(file.filename)
                     file.save(os.path.join(directory_path, filename))
 
-                bot_response = llama_response(directory_path, user_input)
+                bot_response = llama_response(directory_path, user_input, True)
 
     elif mode == 'online' and model == 'gpt-3.5' and rag == 'on':
         files = request.files.getlist('directory')
@@ -345,6 +334,7 @@ def chat():
                 for file in valid_files:
                     filename = secure_filename(file.filename)
                     file.save(os.path.join(directory_path, filename))
+
                 bot_response = rag_mode(directory_path, user_input, True)
 
             else:
@@ -353,17 +343,14 @@ def chat():
                     bot_response = rag_mode("", user_input, False)
                 else:
                     return jsonify({'response': "No valid files uploaded."})
-                
+
     elif mode == 'online' and model == 'gpt-3.5' and rag == 'off':
         bot_response = gpt3chatbot(user_input)
     elif mode == 'offline' and model == 'llama' and rag == 'off':
         bot_response = llamachatbot(user_input)
 
-
-
-
     return jsonify({'response': bot_response})
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8006)
