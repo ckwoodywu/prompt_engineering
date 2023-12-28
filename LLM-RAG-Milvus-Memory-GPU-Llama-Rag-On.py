@@ -104,7 +104,7 @@ def load_collection(new_doc, embedding):
 #        connection_args={"host": MILVUS_HOST, "port": MILVUS_PORT},
 #    )
     return milvusDb
-model = "meta-llama/Llama-2-7b-chat-hf"
+model = "meta-llama/Llama-2-13b-chat-hf"
 
 tokenizer = AutoTokenizer.from_pretrained(model)
 
@@ -138,12 +138,12 @@ def llama_response(directory, query):
     #     n_parts=1,
     # )
 
-    llm = HuggingFacePipeline(pipeline=pipeline, model_kwargs={'temperature': 0})
-
+    # llm = HuggingFacePipeline(pipeline=pipeline, model_kwargs={'temperature': 0})
+    llm = HuggingFacePipeline(pipeline=pipeline)
     # load files from directory
     loader = DirectoryLoader(directory)
     documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=20)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
     docs = text_splitter.split_documents(documents)
 
     # embedding engine
@@ -182,7 +182,7 @@ def llama_response(directory, query):
 
     from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-    condense_q_system_prompt = """Given a chat history and the latest user question \
+    condense_q_system_prompt = """Given a chat history and the user question \
      which might reference the chat history, formulate a standalone question \
      which can be understood without the chat history. Do NOT answer the question, \
      just reformulate it if needed and otherwise return it as is."""

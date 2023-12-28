@@ -130,7 +130,7 @@ def llama_response(directory, query, hasNewCollection):
             continue
 
         # embedding engine
-        hf_embedding = HuggingFaceInstructEmbeddings()
+        hf_embedding = OpenAIEmbeddings()
 
         # Create New Milvus collection & Store new documents into the collection
         docsearch = create_collection(new_doc, hf_embedding)
@@ -152,14 +152,28 @@ def llama_response(directory, query, hasNewCollection):
 
     print(search)
 
-    chain = load_qa_with_sources_chain(OpenAI(temperature=0), chain_type="map_reduce", return_intermediate_steps=True)
+    # chain = load_qa_with_sources_chain(OpenAI(temperature=0), chain_type="map_reduce", return_intermediate_steps=True)
+    qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=docsearch.as_retriever(),
+                                     return_source_documents=True)
 
+    #   qa = VectorDBQA.from_chain_type(llm=llm, chain_type="stuff", vectorstore=docsearch, return_source_documents=True)
+
+    use_original_text = request.form.get('useOriginalText') == 'on'
+    print(use_original_text)
+    if use_original_text:
+        query = query + ", Just give me the original text you found."
+    else:
+        query = query
+    result = qa({"query": query})
+    return result['result']
     #    chain = load_qa_chain(llm, chain_type="stuff", verbose=False)
 
     # answer = chain.run(input_documents=search, question=query)
 
-    response = chain({"question": search}, return_only_outputs=True)
-    return response['answer']
+    # response = chain({"question": search}, return_only_outputs=True)
+    # response = chain({"question": search}, return_only_outputs=True)
+
+    # return response['answer']
 
     # return answer
 

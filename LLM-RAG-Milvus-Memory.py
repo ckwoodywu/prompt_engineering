@@ -119,7 +119,7 @@ def llama_response(directory, query):
     # load files from directory
     loader = DirectoryLoader(directory)
     documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=0)
     docs = text_splitter.split_documents(documents)
 
     # embedding engine
@@ -178,7 +178,7 @@ def rag_mode(directory, query):
 
         documents = loader.load()
 
-        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
+        text_splitter = CharacterTextSplitter(chunk_size=2000, chunk_overlap=20)
         split_docs = text_splitter.split_documents(documents)
 
         new_doc = []
@@ -371,8 +371,6 @@ def llamachatbot(message):
     output = LLM(prompt)
     print("Response generated.")
     return output
-
-
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
