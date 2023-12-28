@@ -1,5 +1,8 @@
+import gc
+
 from flask import Flask, render_template, request, jsonify
 from langchain.vectorstores.faiss import FAISS
+from transformers import AutoTokenizer
 from werkzeug.utils import secure_filename
 from langchain.document_loaders import DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -47,6 +50,11 @@ from langchain.schema import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage, HumanMessage
+
+from transformers import AutoTokenizer
+from langchain import HuggingFacePipeline
+import transformers
+import torch
 
 app = Flask(__name__)
 # Set openai key in env
@@ -96,25 +104,41 @@ def load_collection(new_doc, embedding):
 #        connection_args={"host": MILVUS_HOST, "port": MILVUS_PORT},
 #    )
     return milvusDb
+model = "meta-llama/Llama-2-7b-chat-hf"
 
+tokenizer = AutoTokenizer.from_pretrained(model)
+
+pipeline = transformers.pipeline(
+    "text-generation",
+    model=model,
+    tokenizer=tokenizer,
+    torch_dtype=torch.bfloat16,
+    trust_remote_code=True,
+    device_map="auto",
+    # max_length=1000,
+    eos_token_id=tokenizer.eos_token_id,
+    repetition_penalty=1.1
+)
 chat_history=[]
 def llama_response(directory, query):
-    callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
+    # callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
+    #
+    # model_name_or_path = "TheBloke/Llama-2-13B-chat-GGUF"
+    # model_basename = "llama-2-13b-chat.Q5_K_M.gguf"
+    # model_path = hf_hub_download(repo_id=model_name_or_path, filename=model_basename)
+    #
+    # llm = LlamaCpp(
+    #     model_path=model_path,
+    #     n_ctx=6000,
+    #     n_gpu_layers=512,
+    #     n_batch=30,
+    #     callback_manager=callback_manager,
+    #     max_tokens=4095,
+    #     # max_tokens=256,
+    #     n_parts=1,
+    # )
 
-    model_name_or_path = "TheBloke/Llama-2-13B-chat-GGUF"
-    model_basename = "llama-2-13b-chat.Q5_K_M.gguf"
-    model_path = hf_hub_download(repo_id=model_name_or_path, filename=model_basename)
-
-    llm = LlamaCpp(
-        model_path=model_path,
-        n_ctx=6000,
-        n_gpu_layers=512,
-        n_batch=30,
-        callback_manager=callback_manager,
-        max_tokens=4095,
-        # max_tokens=256,
-        n_parts=1,
-    )
+    llm = HuggingFacePipeline(pipeline=pipeline, model_kwargs={'temperature': 0})
 
     # load files from directory
     loader = DirectoryLoader(directory)
