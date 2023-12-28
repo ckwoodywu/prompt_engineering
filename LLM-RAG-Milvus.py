@@ -86,7 +86,12 @@ def load_collection(embeddings):
     return milvusDb
 
 
-def llama_response(directory, query):
+def llama_response(directory, query, hasNewCollection):
+    # Connect Milvus Db
+    MILVUS_HOST = "localhost"
+    MILVUS_PORT = "19530"
+    milvus_connection = connections.connect("default", host=MILVUS_HOST, port=MILVUS_PORT)
+
     callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 
     model_name_or_path = "TheBloke/Llama-2-13B-chat-GGUF"
@@ -104,34 +109,38 @@ def llama_response(directory, query):
         n_parts=1,
     )
 
-    # load files from directory
-    loader = DirectoryLoader(directory)
-    documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
-    docs = text_splitter.split_documents(documents)
+    docsearch = ""
 
-    # embedding engine
-    hf_embedding = HuggingFaceInstructEmbeddings()
+    # Create and Add new collection
+    if hasNewCollection == True:
+        loader = DirectoryLoader(directory)
 
-    new_doc = []
+        documents = loader.load()
 
-    for doc in docs:
-        met = doc.metadata
-        met['title'] = "LLM RAG Milvus"
-        met['description'] = "LLM RAG Milvus"
-        met['language'] = 'us'
-        new_doc.append(Document(page_content=doc.page_content, metadata=met))
-    # continue
+        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
+        split_docs = text_splitter.split_documents(documents)
 
-    db = ""
+        new_doc = []
+        for doc in split_docs:
+            met = doc.metadata
+            met['title'] = "T"
+            met['description'] = "D"
+            met['language'] = 'us'
+            new_doc.append(Document(page_content=doc.page_content, metadata=met))
+            continue
 
-    # Loading Vector DB
-    if utility.has_collection(COLLECTION_NAME):
-        db = load_collection(hf_embedding)
+        # embedding engine
+        hf_embedding = HuggingFaceInstructEmbeddings()
 
-    else:
         # Create New Milvus collection & Store new documents into the collection
-        db = create_collection(new_doc, hf_embedding)
+        docsearch = create_collection(new_doc, hf_embedding)
+
+    # Load existing collection
+    else:
+        # embedding engine
+        hf_embedding = HuggingFaceInstructEmbeddings()
+        docsearch = load_collection(hf_embedding)
+
 
     use_original_text = request.form.get('useOriginalText') == 'on'
     print(use_original_text)
@@ -140,7 +149,7 @@ def llama_response(directory, query):
     else:
         query = query
 
-    search = db.similarity_search(query)
+    search = docsearch.similarity_search(query)
 
     print(search)
 
@@ -148,8 +157,12 @@ def llama_response(directory, query):
 
     #    chain = load_qa_chain(llm, chain_type="stuff", verbose=False)
 
-    answer = chain.run(input_documents=search, question=query)
-    return answer
+    #answer = chain.run(input_documents=search, question=query)
+
+    response = chain({"question": search}, return_only_outputs=True)
+    return response['answer']
+
+    #return answer
 
 
 def rag_mode(directory, query, hasNewCollection):
