@@ -12,34 +12,27 @@
             margin: 0;
             padding: 0;
             display: flex;
-            justify-content: center;
             height: 100vh;
         }
         .chat-container {
             display: flex;
-            width: 90%;
-            max-width: 1000px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            align-items: flex-start;
+            width: 100%;
+            max-width: 1200px;
+            margin: auto;
         }
-        .left-container, .right-container {
+        .chat-box-container {
+            flex-grow: 2;
+            padding: 20px;
+        }
+        .settings-container {
+            flex-grow: 1;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-        }
-        .left-container {
-            flex: 3;
-            margin-right: 20px;
-        }
-        .right-container {
-            flex: 1;
-            padding-left: 20px;
-            border-left: 1px solid #ddd;
+            justify-content: space-between;
         }
         .chat-box {
-            height: 400px;
+            height: calc(100vh - 160px);
             overflow-y: auto;
             border: 1px solid #ddd;
             background: #fafafa;
@@ -47,41 +40,57 @@
             border-radius: 8px;
             margin-bottom: 10px;
         }
-        .chat-form {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .chat-form > * {
-            flex: 1;
-            min-width: 120px;
-        }
-        input[type="text"], select, input[type="submit"] {
-            padding: 10px;
-            border-radius: 5px;
+        .chat-message {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 8px;
+            background-color: #f0f0f0;
             border: 1px solid #ddd;
         }
+        .user-message {
+            text-align: right;
+        }
+        .chat-form {
+            display: flex;
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .chat-form > input[type="text"] {
+            flex-grow: 1;
+            border: none;
+            padding: 10px;
+            border-radius: 0;
+            height: 80px;
+        }
         input[type="submit"] {
-            background-color: #4caf50;
-            color: white;
+            position: absolute;
+            right: 0;
+            top: 0;
+            background: none;
+            border: none;
+            padding: 0 15px;
+            height: 100%;
             cursor: pointer;
         }
         input[type="submit"]:hover {
-            background-color: #45a049;
+            background-color: #e5e5e5;
         }
-        input[type="text"] {
-            flex-grow: 2;
+        input[type="submit"]::after {
+            content: '?';
+            font-size: 16px;
+            color: #4caf50;
         }
-        select {
-            padding: 10px;
-            margin-bottom: 10px;
+        /* Hide the original text of the submit button */
+        input[type="submit"].visually-hidden {
+            visibility: hidden;
         }
-        .upload-btn-wrapper {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
+        #directory {
+            display: none;
         }
         .upload-btn {
+            display: inline-block;
             background-color: #4caf50;
             color: white;
             padding: 10px;
@@ -94,44 +103,75 @@
             margin-left: 10px;
             font-size: 14px;
         }
-        #directory {
+        .copy-btn {
             display: none;
+            cursor: pointer;
+            margin-left: 10px;
+            color: #4caf50;
+        }
+
+        .chat-message:hover .copy-btn {
+            display: inline;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 20px;
+            height: 20px;
+            animation: spin 2s linear infinite;
+        }
+        .user-input-textarea {
+            flex-grow: 1;
+            border: none;
+            padding: 10px;
+            border-radius: 0;
+            height: 80px;
+            resize: none;
+        }
+        .user-input-textarea:focus, .chat-form > input[type="text"]:focus {
+            outline: none;
+        }
+
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="chat-container">
-        <div class="left-container">
-            <h1>RAG-CHATBOT</h1>
+        <div class="chat-box-container">
+<!--            <h1>RAG-CHATBOT</h1>-->
             <div id="chatBox" class="chat-box">
-                <!-- Chat messages will appear here -->
+                <!-- Chat messages here -->
             </div>
             <form id="chatForm" class="chat-form" enctype="multipart/form-data">
-                <input type="text" name="user_input" id="user_input" placeholder="Type your message..." required>
+                <textarea name="user_input" id="user_input" placeholder="Type your message..." class="user-input-textarea"></textarea>
                 <input type="submit" value="Send">
             </form>
         </div>
-        <div class="right-container">
+        <div class="settings-container">
+            <!-- Settings form elements here -->
             <select name="mode" id="mode" onchange="updateModelOptions()">
                 <option value="online">Online</option>
                 <option value="offline">Offline</option>
             </select>
             <select name="model" id="model">
                 <option value="gpt-3.5">GPT-3.5</option>
-                <option value="llama">LLaMA</option>
+                <option value="llama" style="display:none;">LLaMA-2-13B</option>
             </select>
             <select name="rag" id="rag">
                 <option value="off">RAG Off</option>
                 <option value="on">RAG On</option>
             </select>
-            <div class="upload-btn-wrapper">
-                <label for="directory" class="upload-btn">Upload</label>
-                <span id="file-upload-status"></span>
-            </div>
+            <label for="directory" class="upload-btn">+</label>
             <input type="file" name="directory" id="directory" multiple>
+            <span id="file-upload-status"></span>
+            <!-- Additional settings if any -->
         </div>
     </div>
-
     <script>
         $(document).ready(function(){
             function updateModelOptions() {
@@ -155,8 +195,6 @@
             $('#chatForm').on('submit', function(e){
                 e.preventDefault();
                 var formData = new FormData(this);
-                var useOriginalText = $('#useOriginalText').is(':checked');
-                formData.append('useOriginalText', useOriginalText); // 加入useOriginalText数据
                 var userMessage = $('#user_input').val();
                 appendMessage(userMessage, 'user-message', false);
                 var loaderMessage = appendMessage('', 'bot-message', true);
@@ -176,6 +214,7 @@
                     }
                 });
             });
+
             function appendMessage(message, className, isLoader = false) {
                 var messageContent = isLoader ? '<div class="loader"></div>' : message;
 
@@ -208,6 +247,7 @@
                 }
             });
         });
+
     </script>
 </body>
 </html>

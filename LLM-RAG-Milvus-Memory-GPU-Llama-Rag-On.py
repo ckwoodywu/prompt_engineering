@@ -143,7 +143,7 @@ def llama_response(directory, query):
     # load files from directory
     loader = DirectoryLoader(directory)
     documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=20)
     docs = text_splitter.split_documents(documents)
 
     # embedding engine
@@ -467,15 +467,15 @@ def llamachatbot(message):
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('old_index.html')
+    return render_template('index.html')
 
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    user_input = request.form['user_input']
-    mode = request.form['mode']
-    model = request.form['model']
-    rag = request.form['rag']
+    user_input = request.form.get('user_input', '')
+    mode = request.form.get('mode', 'online')
+    model = request.form.get('model', 'gpt-3.5')
+    rag = request.form.get('rag', 'off')
     use_entire_uploads = 'useEntireUploads' in request.form
     bot_response = ""  # Initialize bot_response to an empty string or a default value
 
