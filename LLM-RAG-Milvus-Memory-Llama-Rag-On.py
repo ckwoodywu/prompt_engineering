@@ -443,7 +443,7 @@ def llamachatbot(message):
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('index.html')
+    return render_template('old_index.html')
 
 
 @app.route('/chat', methods=['POST'])
