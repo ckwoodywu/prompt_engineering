@@ -1,0 +1,10 @@
+{
+    "chatbot": {
+        "init_msg": ""
+    },
+    
+    "openai": {
+        "key": "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"
+    }
+    
+}

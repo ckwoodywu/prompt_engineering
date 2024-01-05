@@ -1,0 +1,58 @@
+MLOPS
+
+Procedures:
+1. Data Preparation and Feature Engineering
+2. Data, Model, Environment, Parameters Verisoning for Reproducibility, Central Storage for Security and Collaboration
+3. Experiments, Track and Compare Results, Model Validation
+4. Deployment of Models and Pipeliens in Production
+5. Monitoring Accuracy and Performance, Retraining
+
+Roles and Flow:
+1. Data Scientist / ML Researdher
+- Model Development
+2. ML, Data Engineer, MLOPS
+- Model Training, Production Integration
+3. App Devleoper
+- Model Integration in Applications
+4. DevOps | MLOps, Infrastructure DevOps
+- Monitoring
+>>> Retraining to Step 1
+
+Optimization and Deployment:
+1. Optimization Stage
+1.1. Trained Models
+1.2. Model Optimization (Optimize for multiple constraints for high performance inference)
+2. Deployment
+2.1. Model Store
+2.2. Inference Serving (Scaled Multi-framework Inference Serving for high performance & utilization on GPU/CPU) 
+2.3. AI Applications (Query and Result)
+
+Trition Inference Server:
+- Open-source Software for Scalable, Simplified Inference Serving
+- Monthly releases avaiable on github and on NGC as docker container
+- Kubernetes Integraiton
+    - Scalable Microservice in Kubernetes
+    - Helm Chart for Fast Deployment
+    - KFServing Integration
+- MLOps
+    - Live Model Updates | Dynamic Model Loading | Trition Model Analyzer (analyze latency vs. throughput)
+    - Integrated with Azure ML, Seldon, ClearML, AWS SageMaker, Google CAIP
+
+Model Nvaigator:
+1. Automaticallyconverts TF SavedModel and PyTorch Trochscript models to TensorRT Plan
+2. Validates Accuracy
+3. Model Analyzer to find the best config.
+4. Automatically generates helm chart to deploy and Kubernetes
+
+RAPIDS FIL (RAPIDS FOREST INFERENCE LIBRARY):
+- Inference on Tree-based ML models
+- Trained XGBoost, LightGBM, cuML RandomForest, and SKLearn models
+
+Experiment Flow:
+1. Trition on docker
+2. Simple PyTorch Model (Creating configuration files)
+3. HuggingFace Model
+4. Simple TensorFlow Model
+5. Simple TensorRT Model (Model conversion from ONNX to TensorRT)
+6. Advance Inference (Model Analysis)
+7. Metrics (Setting up a metrics server)

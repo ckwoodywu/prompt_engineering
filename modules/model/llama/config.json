@@ -1,0 +1,8 @@
+{
+    "model": "meta-llama/Llama-2-13b-chat-hf",
+    "task": "text-generation",
+    "dtype": "torch.bfloat16",
+    "trust_remote_code": "True",
+    "device_map": "auto",
+    "repetition_penality": 1.1
+}

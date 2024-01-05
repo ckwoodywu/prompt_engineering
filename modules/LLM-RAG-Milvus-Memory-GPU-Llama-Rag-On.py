@@ -143,7 +143,7 @@ def llama_response(directory, query):
     # load files from directory
     loader = DirectoryLoader(directory)
     documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=20)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
     docs = text_splitter.split_documents(documents)
 
     # embedding engine
@@ -472,10 +472,10 @@ def index():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    user_input = request.form.get('user_input', '')
-    mode = request.form.get('mode', 'online')
-    model = request.form.get('model', 'gpt-3.5')
-    rag = request.form.get('rag', 'off')
+    user_input = request.form['user_input']
+    mode = request.form['mode']
+    model = request.form['model']
+    rag = request.form['rag']
     use_entire_uploads = 'useEntireUploads' in request.form
     bot_response = ""  # Initialize bot_response to an empty string or a default value
 
@@ -544,7 +544,6 @@ def chat():
                 return jsonify({'response': bot_response})
             else:
                 return jsonify({'response': "No valid files uploaded."})
-    
     elif mode == 'online' and model == 'gpt-3.5' and rag == 'off':
         bot_response = gpt3chatbot(user_input)
         return jsonify({'response': bot_response})
