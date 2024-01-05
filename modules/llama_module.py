@@ -19,33 +19,29 @@ import rag_module
 def llama_response(question,
                    system_prompt,
                    condense_system_prompt,
-                   model_para={"model": "meta-llama/Llama-2-13b-chat-hf",
-                               "task": "text-generation",
-                               "dtype": torch.bfloat16,
-                               "trust_remote_code": True,
-                               "device_map": "auto",
-                               "repetition_penality": 1.1},
+                   model_para,
                    chat_history=None,
                    retriever=None):
 
     # Without Vector Store
     if not retriever:
-        model_name_or_path = "TheBloke/Llama-2-13B-chat-GGUF"
-        model_basename = "llama-2-13b-chat.Q5_K_M.gguf"
-        model_path = hf_hub_download(repo_id=model_name_or_path, filename=model_basename)
+
+        # Download LLM Model
+        if model_para["path"]:
+            model_path = hf_hub_download(repo_id=model_para["path"], filename=model_para["model"])
         callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 
         llm = LlamaCpp(
             model_path=model_path,
-            n_ctx=6000,
-            n_gpu_layers=512,
-            n_batch=30,
+            n_ctx=model_para["n_ctx"],
+            n_gpu_layers=model_para["n_gpu_layers"],
+            n_batch=model_para["n_batch"],
             callback_manager=callback_manager,
-            max_tokens=4095,
-            n_parts=1,
+            max_tokens=model_para["max_tokens"],
+            n_parts=model_para["n_parts"],
         )
 
-        # generate a response (takes several seconds)
+        # Generate response
         ai_msg_content = llm(question)
 
     # With Vector Store

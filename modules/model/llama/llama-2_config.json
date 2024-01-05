@@ -1,4 +1,6 @@
 {
+    "index": "llama-2",
+    "last_updated_date": "2024-01-01",
     "model": "meta-llama/Llama-2-13b-chat-hf",
     "task": "text-generation",
     "dtype": "torch.bfloat16",
@@ -6,3 +8,4 @@
     "device_map": "auto",
     "repetition_penality": 1.1
 }
+
